@@ -13,6 +13,35 @@ export const LinkedInInputAutoDownload = () => {
     const [downloadStatus, setDownloadStatus] = useState<'idle' | 'ready' | 'downloading' | 'complete'>('idle');
     const downloadLinkRef = useRef<HTMLAnchorElement | null>(null);
 
+    const sanitizeAndValidateLinkedInUsername = (input: string): { isValid: boolean; sanitized: string; error?: string } => {
+        const trimmed = input.trim();
+
+        // Basic sanitization - remove potentially harmful characters
+        const sanitized = trimmed.replace(/[<>\"'&]/g, '');
+
+        // Validation rules for LinkedIn usernames
+        if (!sanitized) {
+            return { isValid: false, sanitized: '', error: 'Username cannot be empty' };
+        }
+
+        if (sanitized.length < 3 || sanitized.length > 100) {
+            return { isValid: false, sanitized, error: 'Username must be between 3-100 characters' };
+        }
+
+        // LinkedIn usernames: letters, numbers, hyphens, periods
+        const linkedInPattern = /^[a-zA-Z0-9\-\.]+$/;
+        if (!linkedInPattern.test(sanitized)) {
+            return { isValid: false, sanitized, error: 'Username can only contain letters, numbers, hyphens, and periods' };
+        }
+
+        // Check for suspicious patterns
+        if (/(\.\.|--|__)/.test(sanitized)) {
+            return { isValid: false, sanitized, error: 'Invalid character sequence in username' };
+        }
+
+        return { isValid: true, sanitized };
+    };
+
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(event.target.value);
         if (error) setError(null);
@@ -26,6 +55,12 @@ export const LinkedInInputAutoDownload = () => {
             return;
         }
 
+        const validation = sanitizeAndValidateLinkedInUsername(inputValue);
+
+        if (!validation.isValid) {
+            setError(validation.error || "Invalid username format");
+            return;
+        }
         if (isLoading) return;
 
         setIsLoading(true);
@@ -147,7 +182,7 @@ export const LinkedInInputAutoDownload = () => {
                             document={<PDFDocLinkedIn profileData={profileDataRes.data} />}
                             fileName={`${profileDataRes.user}_resume.pdf`}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            ref={downloadLinkRef as React.Ref<any>}  
+                            ref={downloadLinkRef as React.Ref<any>}
                             style={{ display: 'none' }}
                         >
                             {({ blob, url, loading, error }) => ''}
