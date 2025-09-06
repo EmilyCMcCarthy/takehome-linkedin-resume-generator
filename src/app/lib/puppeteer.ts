@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import puppeteer, { Browser, BrowserContext, Page } from 'puppeteer';
 import { LoginCredentials, LoginOptions } from '@/app/utils/types';
 
@@ -158,8 +159,9 @@ export const login = async (
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
-    } catch (error) {
-      console.error(`❌ Login attempt ${attempt} failed:`, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Login attempt ${attempt} failed:`, errorMessage);
       if (attempt === maxRetries) {
         throw error;
       }
@@ -179,18 +181,24 @@ const validateLoginSuccess = async (
     // Check success indicator
     if (credentials.successIndicator) {
       if (credentials.successIndicator.startsWith('http')) {
-        console.log(page.url(), "page.url()")
+        console.log(page.url(), "page.url()");
         return page.url().includes(credentials.successIndicator);
       } else {
         try {
-          await page.waitForSelector(credentials.successIndicator).then(() => console.log('found selector'));
+          await page.waitForSelector(credentials.successIndicator);
+          console.log('found selector');
           return true;
         } catch {
           return false;
         }
       }
     }
-  } catch (error) {
+    
+    // No success indicator provided - assume failure
+    return false;
+    
+  } catch (error: unknown) {
+    console.error('Login validation error:', error);
     return false;
   }
 };
@@ -261,65 +269,6 @@ export const getAuthenticatedPage = async (
 
   return page;
 };
-
-// // Create a separate work context (optional - for extra isolation)
-// export const createWorkContext = async (contextId: string = 'work'): Promise<BrowserContext> => {
-//   const browser = await getBrowser();
-
-//   // Close existing work context if it exists
-//   if (activeContextsMap.has(contextId)) {
-//     const existingContext = activeContextsMap.get(contextId)!;
-//     try {
-//       await existingContext.close();
-//       console.log(`🗑️ Closed existing ${contextId} context`);
-//     } catch (error) {
-//       console.warn(`Failed to close ${contextId} context:`, error);
-//     }
-//   }
-
-//   // Create fresh work context
-//   const workContext = await browser.createBrowserContext();
-//   activeContextsMap.set(contextId, workContext);
-
-//   console.log(`Created fresh ${contextId} context`);
-//   return workContext;
-// };
-
-// Get page in work context with session transfer
-// export const getWorkPage = async (
-//   credentials: LoginCredentials,
-//   workContextId: string = 'work',
-//   options: LoginOptions = {}
-// ): Promise<Page> => {
-//   await requireLogin(credentials, options);
-
-//   if (!globalThis.loginContext) {
-//     throw new Error('No login context available');
-//   }
-
-//   // Create or get work context
-//   const workContext = await createWorkContext(workContextId);
-//   const workPage = await workContext.newPage();
-
-//   try {
-//     // Get cookies from login context
-//     const loginCookies = await globalThis.loginContext.cookies();
-
-//     if (loginCookies.length > 0) {
-//       // Set cookies in work context
-//       await workPage.browserContext().setCookie(...loginCookies);
-//       console.log(`Transferred ${loginCookies.length} cookies to work context`);
-//     }
-//   } catch (error) {
-//     console.error('Cookie transfer failed:', error);
-//   }
-
-//   // Track for cleanup
-//   activePagesSet.add(workPage);
-//   workPage.once('close', () => activePagesSet.delete(workPage));
-
-//   return workPage;
-// };
 
 // Session validation in incognito context
 export const validateSession = async (
@@ -423,7 +372,7 @@ export const cleanup = async (options: {
   if (globalThis.loginContext) {
     try {
       await globalThis.loginContext.close();
-      console.log('🗑️ Closed login context');
+      console.log('Closed login context');
     } catch (error) {
       console.warn('Failed to close login context:', error);
     }
@@ -437,7 +386,7 @@ export const cleanup = async (options: {
   if (!options.keepBrowser && globalThis.browserInstance) {
     try {
       await globalThis.browserInstance.close();
-      console.log('🗑️ Closed browser');
+      console.log('Closed browser');
     } catch (error) {
       console.warn('Failed to close browser:', error);
     }

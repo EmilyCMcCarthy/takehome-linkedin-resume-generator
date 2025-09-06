@@ -1,5 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const cheerio = require('cheerio')
+const cheerio = require('cheerio');
+import { LoginCredentials } from '@/app/utils/types';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   getAuthenticatedPage
 } from '@/app/lib/puppeteer';
@@ -26,14 +29,13 @@ const credentials = {
   successIndicator: 'https://www.linkedin.com/feed',
   timeout: 30000,
   maxRetries: 2
-};
+} as LoginCredentials;
 
 async function getLinkedInData(linkedInUsername: string) {
   let page;
   try {
     // automatically log in if not already logged in
     page = await getAuthenticatedPage(credentials);
-    const timeout = 10000;
 
     console.log('✅ Got authenticated page');
 
@@ -67,14 +69,16 @@ async function getLinkedInData(linkedInUsername: string) {
       },
       mainSectionMediumText: [{
         selector: 'main > section:first .text-body-medium',
-        value: (el, key) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value: (el: any) => {
           const trim = $(el).text().trim();
           return `${trim}`;
         }
       }],
       mainSectionSmallText: [{
         selector: 'main > section:first .text-body-small',
-        value: (el, key) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value: (el: any) => {
           const trim = $(el).text().trim();
           return `${trim}`;
         }
@@ -152,9 +156,10 @@ async function getLinkedInData(linkedInUsername: string) {
 
     console.log('✅ All LinkedIn data extraction completed');
     return finalData;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('❌ LinkedIn data extraction failed:', errorMessage);
 
-  } catch (error) {
-    console.error('❌ LinkedIn data extraction failed:', error.message);
     throw error;
   } finally {
     // Clean up page
@@ -169,6 +174,16 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const username = searchParams.get('linkedInUser');
 
+  if (!username) {
+    return Response.json({
+      error: {
+        code: "MISSING_PARAMETER",
+        message: "The 'linkedInUser' parameter is required",
+        details: "Please provide a valid LinkedIn username in the query parameters"
+      }
+    }, { status: 400 });
+  }
+
   try {
     console.log(`Starting LinkedIn data extraction for: ${username}`);
 
@@ -182,13 +197,19 @@ export async function GET(request: Request) {
       data: linkedinData,
     }, { status: 200 });
 
-  } catch (error) {
+    /* eslint-disable-next-line  */
+  } catch (error: unknown) {
     console.error('❌ API Error:', error);
 
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
     return Response.json({
-      user: username,
-      error: `${username} not found. Tip: Double check the spelling. Error: ${error.message}`,
-    }, { status: 400 });
+      error: {
+        code: "USER_NOT_FOUND",
+        message: `${username} not found. Tip: Double check the spelling.`,
+        details: errorMessage
+      }
+    }, { status: 404 });
   }
 }
 

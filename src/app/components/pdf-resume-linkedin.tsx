@@ -45,11 +45,17 @@ const styles = StyleSheet.create({
         marginBottom: 3,
         color: '#333333'
     },
+    itemText0: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        fontStyle: 'italic'
+    },
     noData: {
         fontSize: 12,
         color: '#999999',
         fontStyle: 'italic'
-    }
+    },
+  
 });
 
 
@@ -63,6 +69,7 @@ export const PDFDocLinkedIn = ({
 }: PDFDocLinkedInProps) => {
 
     // Helper to get clean array data
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     const getCleanData = (data: any) => {
         if (!data) return [];
         if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
@@ -81,9 +88,8 @@ export const PDFDocLinkedIn = ({
                 <View fixed style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         {/* Profile Image */}
-                        {profileData?.general?.profilePicture && (
+                        {profileData?.general?.profilePicture && profileData.general.profilePicture.startsWith('https://') && (
                             <Image
-                                alt="profile-picture"
                                 src={profileData.general.profilePicture}
                                 style={{
                                     width: 50,
@@ -113,15 +119,15 @@ export const PDFDocLinkedIn = ({
                 {/* Main Content */}
                 <View>
                     {/* Experience Section */}
-                    <View style={styles.section}>
+                    <View style={styles.section} minPresenceAhead={100}>
                         <Text style={styles.sectionTitle}>Experience</Text>
 
                         {experienceData && experienceData.length > 0 ? (
                             experienceData.map((experience, index) => (
-                                <View key={`exp-${index}`} style={styles.item} wrap={false}>
+                                <View key={`exp-${index}`} style={styles.item} minPresenceAhead={100}>
                                     {Array.isArray(experience) ? (
                                         experience.map((detail, detailIndex) => (
-                                            <Text key={`exp-detail-${detailIndex}`} style={styles.itemText}>
+                                            <Text key={`exp-detail-${detailIndex}`} style={detailIndex === 0 ? styles.itemText0 : styles.itemText}>
                                                 {detail}
                                             </Text>
                                         ))
@@ -136,15 +142,15 @@ export const PDFDocLinkedIn = ({
                     </View>
 
                     {/* Education Section */}
-                    <View style={styles.section} wrap={false}>
+                    <View style={styles.section} minPresenceAhead={100}>
                         <Text style={styles.sectionTitle}>Education</Text>
 
                         {educationData && educationData.length > 0 ? (
                             educationData.map((education, index) => (
-                                <View key={`edu-${index}`} style={styles.item} wrap={false}>
+                                <View key={`edu-${index}`} style={styles.item} minPresenceAhead={100}>
                                     {Array.isArray(education) ? (
                                         education.map((detail, detailIndex) => (
-                                            <Text key={`edu-detail-${detailIndex}`} style={styles.itemText}>
+                                            <Text key={`edu-detail-${detailIndex}`} style={detailIndex === 0 ? styles.itemText0 : styles.itemText}>
                                                 {detail}
                                             </Text>
                                         ))

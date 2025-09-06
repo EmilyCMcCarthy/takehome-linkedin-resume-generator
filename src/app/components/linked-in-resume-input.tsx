@@ -1,5 +1,5 @@
 'use client'
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useState } from "react";
 import { ProfileDataRes } from "../utils/types";
 import { PDFDocLinkedIn } from '@/app/components/pdf-resume-linkedin';
@@ -11,7 +11,7 @@ export const LinkedInInputAutoDownload = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [downloadStatus, setDownloadStatus] = useState<'idle' | 'ready' | 'downloading' | 'complete'>('idle');
-    const downloadLinkRef = useRef<HTMLAnchorElement>(null);
+    const downloadLinkRef = useRef<HTMLAnchorElement | null>(null);
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(event.target.value);
@@ -43,14 +43,18 @@ export const LinkedInInputAutoDownload = () => {
             });
 
             if (!response.ok) {
-                const errorData = response.json();
+                let errorMessage = `HTTP error! status: ${response.status}`;
 
-                if (errorData && errorData.error) {
-                    throw new Error(`HTTP error! status: ${response.status}, error: ${errorData.error}`);
+                try {
+                    const errorData = await response.json();
+                    if (errorData?.error) {
+                        errorMessage += ` - ${errorData.error.message}`;
+                    }
+                } catch {
+                    // JSON parsing failed, use default message
                 }
-                else {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+
+                throw new Error(errorMessage);
             }
 
             const userData: ProfileDataRes = await response.json();
@@ -142,7 +146,8 @@ export const LinkedInInputAutoDownload = () => {
                         <PDFDownloadLink
                             document={<PDFDocLinkedIn profileData={profileDataRes.data} />}
                             fileName={`${profileDataRes.user}_resume.pdf`}
-                            ref={downloadLinkRef}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            ref={downloadLinkRef as React.Ref<any>}  
                             style={{ display: 'none' }}
                         >
                             {({ blob, url, loading, error }) => ''}
@@ -153,7 +158,7 @@ export const LinkedInInputAutoDownload = () => {
                     {downloadStatus === 'complete' && (
                         <div className="mt-4 p-4 bg-gray-50 rounded">
                             <p className="text-sm text-gray-600 mb-2">
-                                Didn't download automatically? Click below:
+                                Didn&apos;t download automatically? Click below:
                             </p>
                             <PDFDownloadLink
                                 document={<PDFDocLinkedIn profileData={profileDataRes!.data} />}
