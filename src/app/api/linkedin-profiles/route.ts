@@ -11,7 +11,6 @@ import {
   linkedInAuthOrChallengeUrlCheck,
   linkedInCheckIfProfileWasFound
 } from '@/app/utils/utils';
-import { Page } from 'puppeteer';
 
 const EMAIL_SELECTOR = '#username';
 const PASSWORD_SELECTOR = '#password';
@@ -97,7 +96,7 @@ async function getLinkedInData(linkedInUsername: string) {
 
     const educationUrl = `https://www.linkedin.com/in/${linkedInUsername}/details/education`;
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded'  }),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
       page.waitForSelector('#profile-content', { timeout: 10000 }),
       page.waitForSelector('.pvs-list__container', { timeout: 10000 }),
       page.goto(educationUrl)
@@ -142,15 +141,15 @@ async function getLinkedInData(linkedInUsername: string) {
     let experienceResult = checkForLinkedInPageListContent(experiencePageContent, "experience");
 
     if (experienceResult.count) {
-       console.log(`Education Content ready immediately`);
+       console.log(`Experience Content ready immediately`);
     } else {
-      console.log('Education Content not ready, waiting 1.5 seconds...');
+      console.log('Experience Content not ready, waiting 1.5 seconds...');
       await new Promise(resolve => setTimeout(resolve, 1500));
       experienceResult = checkForLinkedInPageListContent(experiencePageContent, "experience");
       if (experienceResult.count) {
-         console.log(`Education Content ready after 1.5s`);
+         console.log(`Experience Content ready after 1.5s`);
       } else {
-        console.log('Education Content Still loading, final 2.5 second wait...');
+        console.log('Experience Content Still loading, final 2.5 second wait...');
           await new Promise(resolve => setTimeout(resolve, 2500));
           experienceResult = checkForLinkedInPageListContent(experiencePageContent, "experience");
       }
