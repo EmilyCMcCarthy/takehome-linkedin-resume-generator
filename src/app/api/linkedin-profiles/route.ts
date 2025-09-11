@@ -230,7 +230,7 @@ export async function GET(request: Request) {
 }
 
 
-function checkForLinkedInPageListContent(linkedInPageContent, linkedInPageType: string) {
+function checkForLinkedInPageListContent(linkedInPageContent: string, linkedInPageType: string) {
 
     // Process linkedIn data
     const $linkedInData = cheerio.load(linkedInPageContent);
