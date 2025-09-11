@@ -11,6 +11,7 @@ import {
   linkedInAuthOrChallengeUrlCheck,
   linkedInCheckIfProfileWasFound
 } from '@/app/utils/utils';
+import { Page } from 'puppeteer';
 
 const EMAIL_SELECTOR = '#username';
 const PASSWORD_SELECTOR = '#password';
@@ -96,57 +97,73 @@ async function getLinkedInData(linkedInUsername: string) {
 
     const educationUrl = `https://www.linkedin.com/in/${linkedInUsername}/details/education`;
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded'  }),
       page.waitForSelector('#profile-content', { timeout: 10000 }),
+      page.waitForSelector('.pvs-list__container', { timeout: 10000 }),
       page.goto(educationUrl)
     ]);
 
     console.log('✅ Education page loaded, extracting data...');
+
     const educationPageContent = await page.content();
 
-    // Process education data
-    const $education = cheerio.load(educationPageContent);
-    const educationItems = $education('main').find('li');
-    console.log(`Found ${educationItems.length} education items`);
+    let educationResult = checkForLinkedInPageListContent(educationPageContent, "education");
 
-    const educationResult = [...$education("main")].map(e =>
-      [...$education(e).find("li.pvs-list__paged-list-item")].map(e =>
-        [...$education(e).find("span.visually-hidden")].map(e => $education(e).text())
-      )
-    );
+    if (educationResult.count) {
+       console.log(`Education Content ready immediately`);
+    } else {
+      console.log('Education Content not ready, waiting 1.5 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      educationResult = checkForLinkedInPageListContent(educationPageContent, "education");
+      if (educationResult.count) {
+         console.log(`Education Content ready after 1.5s`);
+      } else {
+        console.log('Education Content Still loading, final 2.5 second wait...');
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          educationResult = checkForLinkedInPageListContent(educationPageContent, "education");
+      }
+    }
 
-    console.log("Education data extracted:", JSON.stringify(educationResult, null, 2));
+    console.log("Education data extracted:", JSON.stringify(educationResult.data, null, 2));
 
     // ===== EXPERIENCE PAGE =====
     console.log('Navigating to experience page...');
     const experienceUrl = `https://www.linkedin.com/in/${linkedInUsername}/details/experience`;
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.waitForNavigation({ waitUntil:'domcontentloaded'}),
       page.waitForSelector('#profile-content', { timeout: 10000 }),
+      page.waitForSelector('.pvs-list__container', { timeout: 10000 }),
       page.goto(experienceUrl)
     ]);
 
     console.log('✅ Experience page loaded, extracting data...');
+
     const experiencePageContent = await page.content();
+    let experienceResult = checkForLinkedInPageListContent(experiencePageContent, "experience");
 
-    // Process experience data
-    const $experience = cheerio.load(experiencePageContent);
-    const experienceItems = $experience('main').find('li');
-    console.log(`Found ${experienceItems.length} experience items`);
+    if (experienceResult.count) {
+       console.log(`Education Content ready immediately`);
+    } else {
+      console.log('Education Content not ready, waiting 1.5 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      experienceResult = checkForLinkedInPageListContent(experiencePageContent, "experience");
+      if (experienceResult.count) {
+         console.log(`Education Content ready after 1.5s`);
+      } else {
+        console.log('Education Content Still loading, final 2.5 second wait...');
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          experienceResult = checkForLinkedInPageListContent(experiencePageContent, "experience");
+      }
+    }
 
-    const experienceResult = [...$experience("main")].map(e =>
-      [...$experience(e).find("li.pvs-list__paged-list-item")].map(e =>
-        [...$experience(e).find("span.visually-hidden")].map(e => $experience(e).text())
-      )
-    );
 
-    console.log("Experience data extracted:", JSON.stringify(experienceResult, null, 2));
+    console.log("Experience data extracted:", JSON.stringify(experienceResult.data, null, 2));
 
     // Return all collected data
     const finalData = {
       general: extractedGeneral,
-      education: educationResult,
-      experience: experienceResult,
+      education: educationResult.data,
+      experience: experienceResult.data,
       rawContent: {
         main: mainPageContent,
         education: educationPageContent,
@@ -213,3 +230,19 @@ export async function GET(request: Request) {
   }
 }
 
+
+function checkForLinkedInPageListContent(linkedInPageContent, linkedInPageType: string) {
+
+    // Process linkedIn data
+    const $linkedInData = cheerio.load(linkedInPageContent);
+    const linkedInDataItems = $linkedInData('main').find('li');
+    console.log(`Found ${linkedInDataItems.length} ${linkedInPageType} items`);
+
+    const linkedInDataResult = [...$linkedInData("main")].map(e =>
+      [...$linkedInData(e).find("li.pvs-list__paged-list-item")].map(e =>
+        [...$linkedInData(e).find("span.visually-hidden")].map(e => $linkedInData(e).text())
+      )
+    );
+
+    return {count: linkedInDataItems.length, data: linkedInDataResult};
+}
